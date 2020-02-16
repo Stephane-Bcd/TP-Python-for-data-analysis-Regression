@@ -47,7 +47,7 @@ def transform_data(df):
 	ndf = pd.DataFrame({
 		"opened_at_datetime": [datetime.strptime(x, dates_format) for x in df["opened_at"]],
 		#"closed_at_datetime": [datetime.strptime(x, dates_format) for x in df["closed_at"]], # may not interest us, because closing tickets are automatic
-		"resolved_at_datetime": [datetime.strptime(x, dates_format) if x != '?' else "" for x in df["resolved_at"]],
+		"resolved_at_datetime": [datetime.strptime(x, dates_format) if x != '?' else None for x in df["resolved_at"]],
 		"made_sla": df["made_sla"],
 		"active": df["active"],
 		"incident_state_num": [ dict_states_int[x] for x in df["incident_state"]],
@@ -57,8 +57,15 @@ def transform_data(df):
 		"sys_updated_at_datetime": [datetime.strptime(x, dates_format) for x in df["sys_updated_at"]],
 		"priority": df["priority"], # used instead of urgency and impact because this is a "summary" of both
 		"knowledge": df["knowledge"], # might be interesting because if knowledge document isn't used, it may take more time
-		"problem_id": df["problem_id"] # might be interesting, because a problem can be more or less long to correct, so the incidents too
-	})
+		"problem_id": [int(str(x).replace("Problem ID  ", "")) if x != '?' else None for x in df["problem_id"]], # might be interesting, because a problem can be more or less long to correct, so the incidents too
+		"location": [int(str(x).replace("Location ", "")) if x != '?' else None for x in df["location"]], # maybe some places can have a lack of service ?
+		"category": [int(str(x).replace("Category ", "")) if x != '?' else None for x in df["category"]], # Maybe some categories are more difficult to resolve
+		"subcategory": [int(str(x).replace("Subcategory ", "")) if x != '?' else None for x in df["subcategory"]],
+		"opened_by": [int(str(x).replace("Opened by  ", "")) if x != '?' else None for x in df["opened_by"]], # Maybe some users make some less clear requests, or are not liked by it ?
+		"u_symptom": [int(str(x).replace("Symptom ", "")) if x != '?' else None for x in df["u_symptom"]], # symptoms can help it to resolve the problem
+		"assignment_group": [int(str(x).replace("Group ", "")) if x != '?' else None for x in df["assignment_group"]], # assigned group may be more or less performant
+		"assigned_to": [int(str(x).replace("Resolver ", "")) if x != '?' else None for x in df["assigned_to"]] # same as for assignement group
+	}) 
 	
 	
 	
@@ -78,13 +85,23 @@ def get_grouped_values(df, column_name, verbose=False):
 	dic = {}
 	
 	for val in df[column_name].values:
+		val = str(val)
 		if val in dic:
 			dic[val] += 1
 		else:
 			dic[val] = 0
 	
-	if verbose: print(json.dumps(dic, indent=3))
+	if verbose: 
+		print("Content for: "+column_name)
+		print(json.dumps(dic, indent=3))
+		print("")
 	return dic
+
+def print_all_df_grouped_data(df, needed_columns = []):
+	for (columnName, columnData) in df.iteritems():
+		if columnName in needed_columns or needed_columns == []:
+			print('Colunm Name : ', columnName)
+			get_grouped_values(df, columnName, True)
 
 '''
 	This section is about testing all current functions
@@ -104,11 +121,14 @@ print(data_transformed.head(100))'''
 # new functions created to import and transform data
 
 print("transformed and filtered dataframe:")
-print(transform_data(data).head(10))
+
+ndata = transform_data(data)
+print(ndata.head(10))
 
 
 # Printing states different values
-get_grouped_values(data, "incident_state")
+'''get_grouped_values(data, "incident_state")
+get_grouped_values(data, "notify", True)'''
 '''
 	This printed
 {
@@ -144,7 +164,9 @@ get_grouped_values(data, "incident_state")
 	So i put it into transformation function
 '''
 
-
+# Printing all possible values for each transformed dataframe column:
+# we can precise witch columns we want to show precisely
+print_all_df_grouped_data(ndata, ["assigned_to", "assignment_group", "u_symptom", "opened_by", "subcategory", "category", "location", "problem_id"])
 
 
 
