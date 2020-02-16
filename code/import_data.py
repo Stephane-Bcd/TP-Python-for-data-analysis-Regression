@@ -51,17 +51,31 @@ def transform_data(df):
 		"1 - Critical": 1,
 	}
 	
+	dict_contact_type = {   
+		"Phone": 1,
+		"Email": 2,
+		"Self service": 3,
+		"Direct opening": 4,
+		"IVR": 5
+	}
+	
 	ndf = pd.DataFrame({
 		"opened_at_datetime": [datetime.strptime(x, dates_format) for x in df["opened_at"]],
 		#"closed_at_datetime": [datetime.strptime(x, dates_format) for x in df["closed_at"]], # may not interest us, because closing tickets are automatic
 		"resolved_at_datetime": [datetime.strptime(x, dates_format) if x != '?' else None for x in df["resolved_at"]],
-		"made_sla": df["made_sla"],
-		"active": df["active"],
-		"incident_state_num": [ dict_states_int[x] for x in df["incident_state"]],
+		"made_sla": [1 if x == True else 0 for x in df["made_sla"]],
+		"active": [1 if x == True else 0 for x in df["active"]],
+		"incident_state": [ dict_states_int[x] for x in df["incident_state"]],
 		"reassignment_count": df["reassignment_count"],
 		"reopen_count": df["reopen_count"],
 		"sys_mod_count": df["sys_mod_count"],
-		"sys_updated_at_datetime": [datetime.strptime(x, dates_format) for x in df["sys_updated_at"]],
+		"problem_id": df["problem_id"],
+		"rfc": [int(str(x).replace("CHG","")) if x != '?' else None for x in df["rfc"]],
+		"caused_by": [int(str(x).replace("CHG","")) if x != '?' else None for x in df["caused_by"]],
+		"vendor": [int(str(x).replace("Vendor ", "")) if x not in ['?', 'code 8s'] else None for x in df["vendor"]],
+		"notify": [ 0 if x == "Do Not Notify" else 1 for x in df["notify"]],
+		"contact_type": [dict_contact_type[x] for x in df["contact_type"]],
+		"sys_updated_at": [datetime.strptime(x, dates_format) for x in df["sys_updated_at"]],
 		"priority": [dict_priority_int[x] for x in  df["priority"]], # used instead of urgency and impact because this is a "summary" of both
 		"knowledge": [1 if x == True else 0 for x in df["knowledge"]], # might be interesting because if knowledge document isn't used, it may take more time
 		"problem_id": [int(str(x).replace("Problem ID  ", "")) if x != '?' else None for x in df["problem_id"]], # might be interesting, because a problem can be more or less long to correct, so the incidents too
@@ -72,7 +86,7 @@ def transform_data(df):
 		"u_symptom": [int(str(x).replace("Symptom ", "")) if x != '?' else None for x in df["u_symptom"]], # symptoms can help it to resolve the problem
 		"assignment_group": [int(str(x).replace("Group ", "")) if x != '?' else None for x in df["assignment_group"]], # assigned group may be more or less performant
 		"assigned_to": [int(str(x).replace("Resolver ", "")) if x != '?' else None for x in df["assigned_to"]] # same as for assignement group
-	}) 
+	})
 	
 	
 	
@@ -107,7 +121,7 @@ def get_grouped_values(df, column_name, verbose=False):
 def print_all_df_grouped_data(df, needed_columns = []):
 	for (columnName, columnData) in df.iteritems():
 		if columnName in needed_columns or needed_columns == []:
-			print('Colunm Name : ', columnName)
+			print('Column Name : ', columnName)
 			get_grouped_values(df, columnName, True)
 
 '''
@@ -173,7 +187,7 @@ get_grouped_values(data, "notify", True)'''
 
 # Printing all possible values for each transformed dataframe column:
 # we can precise witch columns we want to show precisely
-print_all_df_grouped_data(ndata, ["knowledge", "priority", "sys_mod_count", "reopen_count", "reassignment_count", "incident_state_num"])
+print_all_df_grouped_data(ndata, ["vendor", "rfc", "caused_by"])
 
 
 
